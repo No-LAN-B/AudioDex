@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Pokedex - Pixel Edition</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background-color: #d0d0d0; --panel-bg-color: #333; --list-bg-color: #444;
+            --box-bg-color: #555; --box-shadow-color: rgba(0, 0, 0, 0.3);
+            --text-color: #f0f0f0; --accent-color: #ffcb05; --selected-bg-color: #6a6a6a;
+            --stat-bar-bg: #777;
+            /* Type Colors */
+            --type-bug: #a8b820; --type-dark: #705848; --type-dragon: #7038f8;
+            --type-electric: #f8d030; --type-fairy: #ee99ac; --type-fighting: #c03028;
+            --type-fire: #f08030; --type-flying: #9982df; --type-ghost: #705898;
+            --type-grass: #78c850; --type-ground: #e0c068; --type-ice: #98d8d8;
+            --type-normal: #a8a878; --type-poison: #a040a0; --type-psychic: #f85586;
+            --type-rock: #b8a038; --type-steel: #b8b8d0; --type-water: #6890f0;
+        }
+
+        body {
+            font-family: 'Press Start 2P', cursive; background-color: var(--background-color);
+            color: var(--text-color); margin: 0; padding: 15px; display: flex;
+            gap: 40px; font-size: 10px; line-height: 1.7; height: 100vh; box-sizing: border-box;
+        }
+
+        /* Detail View (Left) */
+        #pokemon-detail-view {
+            width: 400px; height: calc(100% - 0px); overflow-y: auto;
+            background-color: var(--panel-bg-color); padding: 20px; border-radius: 8px;
+            box-shadow: 3px 3px 8px var(--box-shadow-color); border: 3px solid #222;
+            scrollbar-width: thin; scrollbar-color: var(--accent-color) #222; flex-shrink: 0;
+        }
+         #pokemon-detail-view::-webkit-scrollbar { width: 8px; }
+         #pokemon-detail-view::-webkit-scrollbar-track { background: #222; border-radius: 4px; }
+         #pokemon-detail-view::-webkit-scrollbar-thumb { background-color: var(--accent-color); border-radius: 4px; border: 1px solid #222; }
+
+        /* Container for Search + List (Right) */
+        #search-list-container {
+            flex: 1; height: calc(100% - 0px); display: flex; flex-direction: column; gap: 15px;
+        }
+        #search-bar {
+            padding: 8px 10px; border: 3px solid #222; border-radius: 5px;
+            background-color: #555; color: var(--text-color);
+            font-family: 'Press Start 2P', cursive; font-size: 0.9em;
+            outline: none; flex-shrink: 0;
+        }
+        #search-bar:focus { border-color: var(--accent-color); }
+
+        /* List styling */
+         #pokedex-list {
+            flex-grow: 1; display: flex; flex-direction: column; gap: 15px; padding: 20px;
+            overflow-y: scroll; background-color: var(--list-bg-color);
+            border: 3px solid #222; border-radius: 8px;
+            scrollbar-width: thin; scrollbar-color: var(--accent-color) #222;
+         }
+         #pokedex-list::-webkit-scrollbar { width: 8px; }
+         #pokedex-list::-webkit-scrollbar-track { background: #222; border-radius: 4px; }
+         #pokedex-list::-webkit-scrollbar-thumb { background-color: var(--accent-color); border-radius: 4px; border: 1px solid #222; }
+
+        /* Base item style */
+        .pokemon-entry {
+            display: flex; align-items: center; background-color: var(--box-bg-color);
+            border-radius: 5px; padding: 8px 10px; box-shadow: 2px 2px 5px var(--box-shadow-color);
+            cursor: pointer; transition: transform 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+            opacity: 0; transform: translateY(15px); border: 2px solid #333;
+            overflow: hidden; flex-shrink: 0;
+        }
+
+        /* --- Scroll Animation --- */
+        @supports (animation-timeline: view()) { .pokemon-entry { animation: fade-in-up linear both; animation-timeline: view(); animation-range: entry 5% contain 30%; } }
+        @supports not (animation-timeline: view()) { .pokemon-entry { opacity: 1; transform: translateY(0); } }
+        @keyframes fade-in-up { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        /* --- End Scroll Animation --- */
+
+        .pokemon-entry .name { font-size: 0.9em; font-weight: normal; text-transform: capitalize; flex-grow: 1; white-space: nowrap; }
+
+        /* --- Hover Style Logic --- */
+        .pokemon-entry:hover { background-color: var(--selected-bg-color); border-color: var(--accent-color); transform: translateX(-20px) translateY(0); }
+        @supports (animation-timeline: view()) { .pokemon-entry:hover { transform: translateX(-20px); } }
+        /* --- End Hover Style --- */
+
+        .pokemon-entry .id { font-size: 0.8em; color: #bbb; margin-left: 10px; flex-shrink: 0; }
+        .pokemon-entry img { width: 48px; height: 48px; margin-right: 10px; image-rendering: pixelated; flex-shrink: 0; }
+
+        /* --- Detail View Styles --- */
+         #pokemon-detail-view h2 { text-align: center; margin-top: 0; margin-bottom: 15px; text-transform: capitalize; color: var(--accent-color); font-size: 1.4em; }
+         #pokemon-detail-view img { display: block; margin: 15px auto; width: 120px; height: 120px; image-rendering: pixelated; background-color: #555; border-radius: 5px; border: 2px solid #666; }
+         #pokemon-detail-view .types { text-align: center; margin-bottom: 20px; }
+         #pokemon-detail-view .types span { display: inline-block; padding: 4px 8px; margin: 3px 2px; border-radius: 3px; color: white; font-size: 0.85em; text-transform: uppercase; border: 1px solid rgba(255, 255, 255, 0.3); text-shadow: 1px 1px #333; }
+         .stats-container { margin-bottom: 15px; }
+         .stat-item { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.9em; }
+         .stat-name { width: 65px; text-transform: capitalize; font-weight: normal; color: #ccc; padding-right: 5px; }
+         .stat-bar-container { flex-grow: 1; height: 12px; background-color: var(--stat-bar-bg); border-radius: 3px; overflow: hidden; margin: 0 5px; border: 1px solid #222; }
+         .stat-bar { height: 100%; background-color: var(--accent-color); transition: width 0.5s ease-out; }
+         .stat-value { min-width: 25px; text-align: right; font-weight: normal; color: #fff; }
+         .detail-section { padding: 15px 0; border-top: 1px solid #555; }
+         .stats-container.detail-section { padding-top: 0; border-top: none; }
+         .detail-section h3 { margin-top: 0; margin-bottom: 5px; /* Reduced margin slightly before note */ font-size: 1em; color: var(--accent-color); text-transform: uppercase; }
+         /* Style for the disclaimer note */
+         .data-source-note {
+             font-size: 0.8em;
+             color: #aaa;
+             margin-top: 0;
+             margin-bottom: 12px; /* Space below note */
+         }
+         .detail-section p { font-size: 0.9em; color: #ccc; margin: 5px 0; }
+
+        /* --- Encounter Accordion Styles --- */
+         .encounter-version-block { margin-bottom: 5px; }
+         .encounter-header { cursor: pointer; position: relative; padding: 5px 0; border-bottom: 1px dashed #666; margin-bottom: 0 !important; }
+         .encounter-header:hover { color: #fff; }
+         .toggle-icon { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); font-size: 1.2em; color: var(--accent-color); padding: 0 5px; }
+         .encounter-list { max-height: 0; overflow: hidden; transition: max-height 0.35s ease-out; padding-left: 0; list-style: none; margin-top: 8px; margin-bottom: 0; }
+         .encounter-version-block.expanded .encounter-list { max-height: 600px; }
+         .encounter-list li { margin-bottom: 4px; line-height: 1.5; font-size: 0.85em; }
+         .encounter-list li::before { content: "> "; color: var(--accent-color); margin-right: 5px; }
+        /* --- End Encounter Accordion Styles --- */
+
+         .loading, .placeholder { text-align: center; color: #aaa; font-style: normal; padding: 20px; font-size: 1.1em; }
+        /* Type Colors */
+        .type-bug { background-color: var(--type-bug); } .type-dark { background-color: var(--type-dark); } .type-dragon { background-color: var(--type-dragon); } .type-electric { background-color: var(--type-electric); } .type-fairy { background-color: var(--type-fairy); } .type-fighting { background-color: var(--type-fighting); } .type-fire { background-color: var(--type-fire); } .type-flying { background-color: var(--type-flying); } .type-ghost { background-color: var(--type-ghost); } .type-grass { background-color: var(--type-grass); } .type-ground { background-color: var(--type-ground); } .type-ice { background-color: var(--type-ice); } .type-normal { background-color: var(--type-normal); } .type-poison { background-color: var(--type-poison); } .type-psychic { background-color: var(--type-psychic); } .type-rock { background-color: var(--type-rock); } .type-steel { background-color: var(--type-steel); } .type-water { background-color: var(--type-water); }
+
+    </style>
+</head>
+<body>
+
+    <div id="pokemon-detail-view">
+        <div class="placeholder">SELECT A POKEMON FROM THE LIST</div>
+        </div>
+
+    <div id="search-list-container">
+        <input type="text" id="search-bar" placeholder="SEARCH NAME OR #">
+        <div id="pokedex-list">
+            <div class="loading">LOADING POKEMON...</div>
+        </div>
+    </div>
+
+
+    <script>
+        const listContainer = document.getElementById('pokedex-list');
+        const detailView = document.getElementById('pokemon-detail-view');
+        const searchBar = document.getElementById('search-bar');
+        const POKEAPI_BASE_URL = 'https://pokeapi.co/api/v2/';
+        const POKEMON_LIMIT = 1025;
+        const SHINY_RATE = "1/4096 (GEN VI+)";
+
+        let currentAudio = null;
+
+        // --- Helper Functions ---
+        function getCaptureRateDescription(rate) { if (rate === null || rate === undefined) return "N/A"; if (rate <= 45) return `VERY HARD (${rate})`; if (rate <= 100) return `HARD (${rate})`; if (rate <= 175) return `MEDIUM (${rate})`; return `EASY (${rate})`; }
+        function formatStatName(name) { switch(name) { case 'hp': return 'HP'; case 'attack': return 'ATK'; case 'defense': return 'DEF'; case 'special-attack': return 'SP.ATK'; case 'special-defense': return 'SP.DEF'; case 'speed': return 'SPD'; default: return name.toUpperCase(); } }
+        function playCry(cryUrl) { if (currentAudio) { currentAudio.pause(); currentAudio = null; } if (cryUrl) { currentAudio = new Audio(cryUrl); currentAudio.play().catch(e => { console.error("Audio playback error:", e); currentAudio = null; }); currentAudio.onerror = () => { console.error(`Failed to load audio: ${cryUrl}`); currentAudio = null; }; } else { console.log("No cry audio URL found."); } }
+        function formatApiName(name) { if (!name) return ''; return name.replace(/-/g, ' ').replace(/ area$/, '').toLowerCase().split(' ').map(s => s.charAt(0).toUpperCase() + s.substring(1)).join(' '); }
+
+        // --- Display Functions ---
+        async function displayPokemonList(pokemonList) { /* Unchanged */
+            listContainer.innerHTML = '';
+            for (const pokemon of pokemonList) {
+                 try {
+                    const r = await fetch(pokemon.url); if (!r.ok) throw new Error(`HTTP error! Status: ${r.status}`); const d = await r.json();
+                    const entry = document.createElement('div'); entry.className = 'pokemon-entry';
+                    entry.dataset.url = pokemon.url; entry.dataset.speciesUrl = d.species.url;
+                    entry.dataset.encountersUrl = `${POKEAPI_BASE_URL}pokemon/${d.id}/encounters`; entry.dataset.pokemonId = d.id;
+                    const id = d.id.toString().padStart(3, '0'); const name = d.name; const spriteUrl = d.sprites?.front_default || 'placeholder.png';
+                    entry.dataset.pokemonName = name.toLowerCase(); entry.dataset.pokemonNum = id;
+                    entry.innerHTML = `<img src="${spriteUrl}" alt="${name}"><div class="name">${name}</div><div class="id">#${id}</div>`;
+                    entry.addEventListener('click', () => displayPokemonDetail(entry.dataset.url, entry.dataset.speciesUrl, entry.dataset.encountersUrl));
+                    listContainer.appendChild(entry);
+                 } catch (e) { console.error(`Failed fetch basic: ${pokemon.name}:`, e); const errEntry = document.createElement('div'); errEntry.className = 'pokemon-entry'; errEntry.innerHTML = `<div class="name">${pokemon.name}</div><div class="id" style="color:red;">ERROR</div>`; listContainer.appendChild(errEntry); }
+            }
+        }
+
+        async function displayPokemonDetail(url, speciesUrl, encountersUrl) {
+            detailView.innerHTML = `<div class="loading">LOADING DETAILS...</div>`;
+            try {
+                const [detailsRes, speciesRes, encountersRes] = await Promise.allSettled([ fetch(url), fetch(speciesUrl), fetch(encountersUrl) ]);
+                if (detailsRes.status !== 'fulfilled' || !detailsRes.value.ok) throw new Error(`HTTP error details: ${detailsRes.value?.status}`);
+                const details = await detailsRes.value.json();
+                if (speciesRes.status !== 'fulfilled' || !speciesRes.value.ok) console.warn(`HTTP error species: ${speciesRes.value?.status}`);
+                const species = speciesRes.status === 'fulfilled' ? await speciesRes.value.json() : null;
+                playCry(details.cries?.latest);
+
+                // --- Process Encounters ---
+                let locationInfo = "<p>NO ENCOUNTER DATA FOUND IN API.</p>"; // Default message changed slightly
+                const groupedEncounters = {};
+                if (encountersRes.status === 'fulfilled' && encountersRes.value.ok) {
+                     try {
+                        const encounters = await encountersRes.value.json();
+                        if (encounters?.length > 0) {
+                            encounters.forEach(locArea => { const locName = formatApiName(locArea.location_area.name);
+                                locArea.version_details.forEach(vDetail => { const vName = formatApiName(vDetail.version.name);
+                                    if (!groupedEncounters[vName]) groupedEncounters[vName] = new Set();
+                                    vDetail.encounter_details.forEach(eDetail => { const mName = formatApiName(eDetail.method.name); const minL = eDetail.min_level; const maxL = eDetail.max_level;
+                                        const lvlRng = minL === maxL ? `Lv ${minL}` : `Lv ${minL}-${maxL}`; const cond = eDetail.condition_values.length > 0 ? ` (${eDetail.condition_values.map(c => formatApiName(c.name)).join(', ')})` : '';
+                                        groupedEncounters[vName].add(`${locName} (${mName}${cond}: ${lvlRng})`); }); }); }); }
+                    } catch (e) { console.error("Parse encounter error:", e); locationInfo = "<p>ERROR PARSING ENCOUNTERS.</p>"; }
+                } else { console.warn(`Workspace encounter fail. Status: ${encountersRes.reason || encountersRes.value?.status}`); }
+
+                const versionKeys = Object.keys(groupedEncounters).sort();
+                if (versionKeys.length > 0) {
+                    locationInfo = versionKeys.map(versionName => {
+                        const encountersHtml = [...groupedEncounters[versionName]].sort().map(encStr => `<li>${encStr}</li>`).join('');
+                        return `<div class="encounter-version-block"><h3 class="encounter-header">${versionName.toUpperCase()}<span class="toggle-icon">+</span></h3><ul class="encounter-list">${encountersHtml}</ul></div>`;
+                    }).join('');
+                }
+                // *** End of encounter processing ***
+
+                // --- Populate Detail View ---
+                const name = details.name; const id = details.id.toString().padStart(3, '0'); const spriteUrl = details.sprites?.front_default || 'placeholder.png';
+                const shinySpriteUrl = details.sprites?.front_shiny || spriteUrl; const types = details.types.map(t => `<span class="type-${t.type.name}">${t.type.name}</span>`).join(' ');
+                const statsHtml = details.stats.map(s => { const n = formatStatName(s.stat.name); const b = s.base_stat; const m = 200; const w = Math.min(100, (b / m) * 100 * 1.2); return `<div class="stat-item"><span class="stat-name">${n}</span><div class="stat-bar-container"><div class="stat-bar" style="width: ${w}%;"></div></div><span class="stat-value">${b}</span></div>`; }).join('');
+                const captureRate = species?.capture_rate; const captureDesc = getCaptureRateDescription(captureRate);
+                const height = (details.height / 10).toFixed(1); const weight = (details.weight / 10).toFixed(1);
+
+                 // Added disclaimer text variable
+                 const disclaimer = "<p class='data-source-note'>(Encounter data from PokeAPI; may be incomplete or missing newer games.)</p>";
+
+                detailView.innerHTML = `
+                    <h2>${name} (#${id})</h2>
+                    <img src="${spriteUrl}" alt="${name}" id="detailSprite" title="Click to toggle Shiny">
+                    <div class="types">${types}</div>
+                    <div class="stats-container detail-section"><h3>BASE STATS</h3>${statsHtml}</div>
+                    <div class="detail-section"><h3>INFO</h3><p>HEIGHT: ${height} M</p><p>WEIGHT: ${weight} KG</p><p>CATCH RATE: ${captureDesc}</p><p>SHINY RATE: ${SHINY_RATE}</p><p style="font-size: 0.8em; color: #aaa;">(CATCH RATE BASED ON BASE VALUE)</p></div>
+                    <div class="detail-section" id="encounter-section">
+                        <h3>GAME ENCOUNTERS</h3>
+                        ${disclaimer} ${locationInfo}
+                    </div>`;
+
+                const detailSprite = document.getElementById('detailSprite');
+                if (detailSprite) { let isShiny = false; detailSprite.style.cursor = 'pointer'; detailSprite.addEventListener('click', (e) => { e.stopPropagation(); isShiny = !isShiny; detailSprite.src = isShiny ? shinySpriteUrl : spriteUrl; }); }
+                setupEncounterAccordion(); // Call function to add listeners
+
+            } catch (e) { console.error('Failed display details:', e); detailView.innerHTML = `<div class="placeholder" style="color:red;">COULD NOT LOAD DETAILS.</div>`; if (currentAudio) { currentAudio.pause(); currentAudio = null; } }
+        }
+
+        function setupEncounterAccordion() { // Unchanged from previous version
+            const encounterSection = document.getElementById('encounter-section'); if (!encounterSection) return;
+            encounterSection.addEventListener('click', function(event) { const header = event.target.closest('.encounter-header'); if (!header) return; const versionBlock = header.closest('.encounter-version-block'); if (!versionBlock) return; versionBlock.classList.toggle('expanded'); const icon = header.querySelector('.toggle-icon'); if (icon) { icon.textContent = versionBlock.classList.contains('expanded') ? '-' : '+'; } }); }
+
+        function filterPokemonList() { /* Unchanged */
+            const searchTerm = searchBar.value.toLowerCase().trim(); const pokemonEntries = listContainer.querySelectorAll('.pokemon-entry');
+            pokemonEntries.forEach(entry => { const name = entry.dataset.pokemonName || ''; const number = entry.dataset.pokemonNum || ''; const isMatch = name.includes(searchTerm) || number.startsWith(searchTerm); entry.style.display = isMatch ? 'flex' : 'none'; }); }
+        searchBar.addEventListener('input', filterPokemonList);
+
+        async function loadInitialPokemon() { /* Unchanged */
+            try { const r = await fetch(`${POKEAPI_BASE_URL}pokemon?limit=${POKEMON_LIMIT}&offset=0`); if (!r.ok) throw new Error(`HTTP error! Status: ${r.status}`); const d = await r.json(); await displayPokemonList(d.results); filterPokemonList(); } catch (e) { console.error('Failed initial fetch:', e); listContainer.innerHTML = `<div class="loading" style="color:red;">FAILED TO LOAD LIST.</div>`; } }
+
+        loadInitialPokemon();
+
+    </script>
+</body>
+</html>
