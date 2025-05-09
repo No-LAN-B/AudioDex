@@ -106,7 +106,7 @@
              font-size: 0.8em;
              color: #aaa;
              margin-top: 0;
-             margin-bottom: 12px; /* Space below note */
+             margin-bottom: 12px; 
          }
          .detail-section p { font-size: 0.9em; color: #ccc; margin: 5px 0; }
 
@@ -158,7 +158,7 @@
         function formatApiName(name) { if (!name) return ''; return name.replace(/-/g, ' ').replace(/ area$/, '').toLowerCase().split(' ').map(s => s.charAt(0).toUpperCase() + s.substring(1)).join(' '); }
 
         // --- Display Functions ---
-        async function displayPokemonList(pokemonList) { /* Unchanged */
+        async function displayPokemonList(pokemonList) { 
             listContainer.innerHTML = '';
             for (const pokemon of pokemonList) {
                  try {
@@ -186,7 +186,7 @@
                 playCry(details.cries?.latest);
 
                 // --- Process Encounters ---
-                let locationInfo = "<p>NO ENCOUNTER DATA FOUND IN API.</p>"; // Default message changed slightly
+                let locationInfo = "<p>NO ENCOUNTER DATA FOUND IN API.</p>";
                 const groupedEncounters = {};
                 if (encountersRes.status === 'fulfilled' && encountersRes.value.ok) {
                      try {
@@ -238,16 +238,16 @@
             } catch (e) { console.error('Failed display details:', e); detailView.innerHTML = `<div class="placeholder" style="color:red;">COULD NOT LOAD DETAILS.</div>`; if (currentAudio) { currentAudio.pause(); currentAudio = null; } }
         }
 
-        function setupEncounterAccordion() { // Unchanged from previous version
+        function setupEncounterAccordion() { 
             const encounterSection = document.getElementById('encounter-section'); if (!encounterSection) return;
             encounterSection.addEventListener('click', function(event) { const header = event.target.closest('.encounter-header'); if (!header) return; const versionBlock = header.closest('.encounter-version-block'); if (!versionBlock) return; versionBlock.classList.toggle('expanded'); const icon = header.querySelector('.toggle-icon'); if (icon) { icon.textContent = versionBlock.classList.contains('expanded') ? '-' : '+'; } }); }
 
-        function filterPokemonList() { /* Unchanged */
+        function filterPokemonList() { 
             const searchTerm = searchBar.value.toLowerCase().trim(); const pokemonEntries = listContainer.querySelectorAll('.pokemon-entry');
             pokemonEntries.forEach(entry => { const name = entry.dataset.pokemonName || ''; const number = entry.dataset.pokemonNum || ''; const isMatch = name.includes(searchTerm) || number.startsWith(searchTerm); entry.style.display = isMatch ? 'flex' : 'none'; }); }
         searchBar.addEventListener('input', filterPokemonList);
 
-        async function loadInitialPokemon() { /* Unchanged */
+        async function loadInitialPokemon() { 
             try { const r = await fetch(`${POKEAPI_BASE_URL}pokemon?limit=${POKEMON_LIMIT}&offset=0`); if (!r.ok) throw new Error(`HTTP error! Status: ${r.status}`); const d = await r.json(); await displayPokemonList(d.results); filterPokemonList(); } catch (e) { console.error('Failed initial fetch:', e); listContainer.innerHTML = `<div class="loading" style="color:red;">FAILED TO LOAD LIST.</div>`; } }
 
         loadInitialPokemon();
