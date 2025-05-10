@@ -251,7 +251,8 @@
             try { const r = await fetch(`${POKEAPI_BASE_URL}pokemon?limit=${POKEMON_LIMIT}&offset=0`); if (!r.ok) throw new Error(`HTTP error! Status: ${r.status}`); const d = await r.json(); await displayPokemonList(d.results); filterPokemonList(); } catch (e) { console.error('Failed initial fetch:', e); listContainer.innerHTML = `<div class="loading" style="color:red;">FAILED TO LOAD LIST.</div>`; } }
 
         loadInitialPokemon();
-
+        /* :3 */
+        // --- End of Main Logic ---
     </script>
 </body>
 </html>
